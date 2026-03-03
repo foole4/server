@@ -11,7 +11,7 @@ class PoEServer:
         self.clients = {}  # ws -> {"type": "client/bot", "name": str, "listening": bool}
         self.client_names = defaultdict(list)
     
-    async def handler(self, websocket, path):
+    async def handler(self, websocket):
         client_ip = websocket.remote_address[0]
         print(f"🔌 Подключение с IP: {client_ip}")
         
