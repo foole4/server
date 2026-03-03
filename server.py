@@ -12,7 +12,6 @@ class PoEServer:
         self.client_names = defaultdict(list)
     
     async def is_open(self, ws):
-        """✅ websockets 16.0 проверка соединения"""
         try:
             await ws.ping()
             return True
@@ -56,14 +55,6 @@ class PoEServer:
                     print(f"✅ Результат от бота: {data['result']}")
                     await self.forward_to_client(websocket, data)
                     
-                elif data["type"] == "status_request":
-                    await self.send_status(websocket)
-                    
-                elif data["type"] == "status_update":
-                    if websocket in self.clients:
-                        self.clients[websocket]["listening"] = data.get("listening", True)
-                        await self.broadcast_status()
-                        
         except websockets.ConnectionClosed:
             print(f"🔌 {client_ip} отключился")
         except Exception as e:
@@ -152,14 +143,13 @@ class PoEServer:
             await self.broadcast_status()
 
 async def main():
-    print("🚀 PoE Server УНИВЕРСАЛЬНЫЙ v2.1")
-    print("📡 Слушает: 0.0.0.0:8765")
-    print("🌐 poe.vpn.ru:8765 | 95.131.147.28:8765 | 192.168.1.187:8765")
+    print("🚀 PoE Server v2.2 - websockets 16.0")
+    print("📡 0.0.0.0:8765 | 192.168.1.187:8765 | 95.131.147.28:8765")
     print("-" * 50)
     
     server = PoEServer()
     async with websockets.serve(server.handler, "0.0.0.0", 8765):
-        print("✅ СЕРВЕР ГОТОВ 24/7!")
+        print("✅ СЕРВЕР 24/7!")
         await asyncio.Future()
 
 if __name__ == "__main__":
