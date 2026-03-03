@@ -12,7 +12,7 @@ class PoEServer:
         self.client_names = defaultdict(list)
     
     async def handler(self, websocket):
-        client_ip = websocket.remote_address[0]
+        client_ip = websocket.remote_address[0] if websocket.remote_address else "unknown"
         print(f"🔌 Подключение с IP: {client_ip}")
         
         try:
@@ -67,19 +67,28 @@ class PoEServer:
     
     async def ping_client(self, websocket):
         """Пинг каждые 30 секунд"""
-        while websocket.open:
+        while True:
             try:
                 await asyncio.sleep(30)
-                if websocket.open:
-                    await websocket.send(json.dumps({"type": "ping"}))
-                    print("🏓 PING отправлен")
+                await websocket.ping()  # ✅ websockets 16.0 ping
+                await websocket.send(json.dumps({"type": "ping"}))
+                print("🏓 PING отправлен")
             except:
+                print("❌ Ping failed - disconnect")
                 break
+    
+    async def is_open(self, ws):
+        """✅ Проверка соединения websockets 16.0"""
+        try:
+            await ws.ping()
+            return True
+        except:
+            return False
     
     async def forward_to_bots(self, source_ws, data):
         """Пересылка команды всем ботам"""
         for ws, info in list(self.clients.items()):
-            if info["type"] == "bot" and ws.open:
+            if info["type"] == "bot" and await self.is_open(ws):
                 try:
                     await ws.send(json.dumps(data))
                     print(f"📤 Команда → бот {info['name']}")
@@ -93,7 +102,7 @@ class PoEServer:
             return
             
         for ws, info in list(self.clients.items()):
-            if (info["type"] == "client" and info["name"] == target and ws.open):
+            if (info["type"] == "client" and info["name"] == target and await self.is_open(ws)):
                 try:
                     await ws.send(json.dumps(data))
                     print(f"📤 Результат → клиент {target}")
@@ -104,7 +113,7 @@ class PoEServer:
         """Статус подключений"""
         status = {"type": "status_response", "clients": {}}
         for ws, info in list(self.clients.items()):
-            if ws.open:
+            if await self.is_open(ws):
                 status["clients"][info["name"]] = {
                     "type": info["type"],
                     "status": "🟢 онлайн" if info.get("listening", True) else "⏸️ пауза",
@@ -119,7 +128,7 @@ class PoEServer:
         """Рассылка статуса ВСЕМ клиентам"""
         status = {"type": "status_response", "clients": {}}
         for ws, info in list(self.clients.items()):
-            if ws.open:
+            if await self.is_open(ws):
                 status["clients"][info["name"]] = {
                     "type": info["type"],
                     "status": "🟢 онлайн" if info.get("listening", True) else "⏸️ пауза",
@@ -153,11 +162,11 @@ class PoEServer:
             await self.broadcast_status()
 
 async def main():
-    print("🚀 PoE Server УНИВЕРСАЛЬНЫЙ")
+    print("🚀 PoE Server УНИВЕРСАЛЬНЫЙ v2.0")
     print("📡 Слушает: 0.0.0.0:8765 (локалка + интернет)")
     print("🌐 IP: 95.131.147.28:8765")
     print("🔗 Домен: poe.vpnlvl.ru:8765") 
-    print("📡 Локалка: 192.168.1.185:8765")
+    print("📡 Локалка: 192.168.1.187:8765")
     print("-" * 50)
     
     server = PoEServer()
